@@ -29,3 +29,10 @@ requests.get('http://localhost:5001')
 You can see a django style settings.py here. 
 The `POOL_SIZE` is the max number of proxies you put in the pool.
 You can configure it according to your needs.
+
+# Extension
+
+To add more proxy website, you can use just one line like this (proxy_pool/pool.py):
+```
+ProxyGetter('http://www.xicidaili.com/nn/{}', range(1,30), cleanse=True)
+```

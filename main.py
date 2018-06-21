@@ -1,13 +1,10 @@
-from proxy_pool.db import Proxy
 from proxy_pool.api import api_run
 from proxy_pool.exam import exam_run
 from proxy_pool.pool import pool_run
 from proxy_pool.settings import *
-from datetime import datetime
 
 from multiprocessing import Process
-import time
-import os
+from datetime import datetime
 
 def basic_info():
     print('PROXY POOL begins.')
