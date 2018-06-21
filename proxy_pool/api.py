@@ -1,5 +1,11 @@
 from proxy_pool import db
+from proxy_pool import settings
 from flask import Flask
+import logging
+
+# hide info output to console
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
 
 app = Flask(__name__)
 
@@ -7,5 +13,6 @@ app = Flask(__name__)
 def index():
     return db.Proxy.random().value
 
-if __name__ == '__main__':
-    app.run(port=5001)
+def api_run():
+    app.run(port=settings.API_PORT)
+    

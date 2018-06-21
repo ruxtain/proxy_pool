@@ -1,87 +1,39 @@
 from proxy_pool.db import Proxy
-from proxy_pool.api import app
-from proxy_pool.exam import verify_proxy
-from proxy_pool.pool import proxy_getters
+from proxy_pool.api import api_run
+from proxy_pool.exam import exam_run
+from proxy_pool.pool import pool_run
+from proxy_pool.settings import *
 from datetime import datetime
 
-import threading
+from multiprocessing import Process
 import time
 import os
- 
-def proxy_getter_worker(proxy_getter):
-    for proxy_str in proxy_getter.get():
-        proxy = Proxy(value=proxy_str, count=0, update=datetime.now())
-        while proxy.count <= 3:
-            if verify_proxy(proxy_str):
-                proxy.count = 0
-                proxy.save()
-                proxy.status('saved')
-                break
-            else:
-                proxy.count += 1
-                if proxy.count > 3:
-                    proxy.status('failed')  
 
+def basic_info():
+    print('PROXY POOL begins.')
+    print('More info can be found here: https://github.com/ruxtain/proxy_pool')
+    print('POOL SIZE: {}'.format(POOL_SIZE))
+    print('API: http://127.0.0.1:{}'.format(API_PORT))
+    print('connecting to: mongodb://{}:{}\n'.format(DB_HOST, DB_PORT))
 
-def web():
-    app.run(port=5001)
+    print('Always use `CTRL+C` to quit ...(Don\'t use `CTRL+Z`)\n')
 
-def schedule():
-    '''
-    定时自检
-    '''
-    retry = 2
-    while True:
-        time.sleep(300) # 5 min
-        for proxy in Proxy.filter(): # all proxy
-            if (datetime.now() - proxy.update).total_seconds() > 600: # 10 min
-                while proxy.count <= retry:
-                    if verify_proxy(proxy.value):
-                        proxy.count = 0
-                        proxy.update = datetime.now()
-                        proxy.save()
-                        proxy.status('updated')
-                        break
-                    else:
-                        proxy.count += 1
-                if proxy.count > retry:
-                    proxy.delete()
-                    proxy.status('deleted')
+def main():
+    basic_info()
+    p_list = [
+        (True, Process(target=pool_run)),
+        (False, Process(target=exam_run)),
+        (True, Process(target=api_run)),
+    ]
 
-def run():
-    webber = threading.Thread(target=web)
-    scheduler = threading.Thread(target=schedule)
-    webber.start()
-    scheduler.start()
-
-    for proxy_getter in proxy_getters:
-        t = threading.Thread(target=proxy_getter_worker, args=(proxy_getter,))
-        t.start()
+    for daemon, p in p_list:
+        p.daemon = daemon
+        p.start()
+    for daemon, p in p_list:
+        p.join()
 
 if __name__ == '__main__':
-    run()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    main()
 
 
 

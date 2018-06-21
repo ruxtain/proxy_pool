@@ -1,14 +1,51 @@
 '''
-to learn more about mongodb
-I'll write an ORM myself
-than I'll switch to mongoengine
+A mini ORM for mongodb.
+You can extend it if you want.
+
+I might switch to mongoengine in the future 
+as there's no need to reinvent the wheel.
+
 http://docs.mongoengine.org/tutorial.html
 '''
 
 import pymongo
 from datetime import datetime
+from proxy_pool import settings
 
-__author__ = 'ruxtain'
+class ClassPropertyDescriptor(object):
+    '''
+    classmethod decorator
+    thanks to `Mahmoud Abdelkader`: 
+    https://stackoverflow.com/questions/5189699/how-to-make-a-class-property
+    '''
+
+    def __init__(self, fget, fset=None):
+        self.fget = fget
+        self.fset = fset
+
+    def __get__(self, obj, cls=None):
+        if cls is None:
+            cls = type(obj)
+        return self.fget.__get__(obj, cls)()
+
+    def __set__(self, obj, value):
+        if not self.fset:
+            raise AttributeError("can't set attribute")
+        type_ = type(obj)
+        return self.fset.__get__(obj, type_)(value)
+
+    def setter(self, func):
+        if not isinstance(func, (classmethod, staticmethod)):
+            func = classmethod(func)
+        self.fset = func
+        return self
+
+def classproperty(func):
+    if not isinstance(func, (classmethod, staticmethod)):
+        func = classmethod(func)
+
+    return ClassPropertyDescriptor(func)
+
 
 #########
 #  ORM  #
@@ -43,6 +80,11 @@ class DatetimeField(Field):
     def validate(self, value):
         return isinstance(value, datetime)
 
+'''
+UserWarning: MongoClient opened before fork. Create MongoClient only after forking. See PyMongo's documentation for details: http://api.mongodb.org/python/current/faq.html#is-pymongo-fork-safe
+  "MongoClient opened before fork. Create MongoClient only "
+'''
+
 class ModelBase(type):
     '''
         metaclass for models
@@ -50,8 +92,6 @@ class ModelBase(type):
         will use settings in the future
     '''
     def __new__(cls, name, bases, attrs):
-        client = pymongo.MongoClient('localhost', 27017)
-        attrs['__collection__'] = client[name.lower()][name.capitalize()]
         __primary_key__ = None
         mappings = {}
         for attr, field in attrs.items(): # include other built-in attributes
@@ -62,13 +102,14 @@ class ModelBase(type):
 
         if __primary_key__:
             attrs['__primary_key__'] = __primary_key__ # Proxy --> Proxy.value is pk
-            attrs['__collection__'].ensure_index(__primary_key__, unique=True)
         attrs['__mappings__'] = mappings # pass fields and their names
         return super().__new__(cls, name, bases, attrs)
 
 
 class Model(metaclass=ModelBase):
-    def __init__(self, **kwargs):  
+    
+
+    def __init__(self, **kwargs): 
         for attr, value in kwargs.items(): # 新建的 Proxy 对象的参数字典
             if attr != '_id': # mappings 中不含 _id 
                 field = self.__mappings__[attr]
@@ -76,10 +117,17 @@ class Model(metaclass=ModelBase):
                     setattr(self, attr, value)
                 else:
                     raise InvalidFieldError
+
+    @classproperty
+    def __collection__(cls): # fork 之后创建 client，以免报警告
+        client = pymongo.MongoClient(settings.DB_HOST, settings.DB_PORT, connect=False)
+        model_name = cls.__name__
+        return client[model_name.lower()][model_name.capitalize()]
+
     @classmethod
     def get(cls, **kwargs):
         '''
-        返回匹配条件的第一个对象（而不是报错）
+        搜索结果数大于1时返回匹配条件的第一个对象（而不是报错）
         '''
         cls.__mappings__['_id'] = None # default
         defined_attrs = set(cls.__mappings__.keys()) # 模型中定义的属性的集合
@@ -104,7 +152,7 @@ class Model(metaclass=ModelBase):
         '''
         cursor = cls.__collection__.aggregate([{ '$sample': { 'size': 1 } }])
         sample = list(cursor)[0]
-        return cls.get(_id=sample['_id'])  # 6.19 todo list
+        return cls.get(_id=sample['_id'])
 
     @classmethod
     def filter(cls, **kwargs):
@@ -127,7 +175,7 @@ class Model(metaclass=ModelBase):
     def _count(cls):
         '''
         返回 item 的总数
-        todo 加个 objects 使得基类方法和类方法不怕重名
+        maybe 加个 objects 使得基类方法和类方法不怕重名
         '''
         return cls.__collection__.count()
 
@@ -141,9 +189,11 @@ class Model(metaclass=ModelBase):
 
     def save(self): 
         '''
-        如果 self 有 _id 属性，则通过 _id 查询，
-        否则，通过 primary_key 查询。
-        如果都查询不到，则新建数据到数据库。
+        Query `self` by _id, if it has no _id,
+        query primary_key instead,
+        if no promary_key, then add a record in database
+        return True if it's adding new record;
+        return Flase if it's update an existing one.
         '''
 
         if hasattr(self, '_id'):
@@ -151,19 +201,24 @@ class Model(metaclass=ModelBase):
                 self.__collection__.update_one(
                     {'_id': self._id}, 
                     {'$set': self.__dict__}
-                )            
+                )   
+                return False         
             else:
                 self.__collection__.insert_one(__dict__.self)
+                return True
         elif hasattr(self, '__primary_key__'):
             if self.__collection__.find_one({self.__primary_key__: self.__getattribute__(self.__primary_key__)}):
                 self.__collection__.update_one(
                     {self.__primary_key__: self.__getattribute__(self.__primary_key__)}, 
                     {'$set': self.__dict__}
                 )
+                return False
             else:
                 self.__collection__.insert_one(self.__dict__)
+                return True
         else:
             self.__collection__.insert_one(self.__dict__)
+            return True
 
 ###########
 #  Model  #
@@ -192,5 +247,5 @@ def main():
     m1 = Proxy(value='123.123.12.123:8000', count=1, update=datetime.now())
     m1.count = 2
     m1.save()
-    r1 = Proxy.random()
-    Proxy.delete(value='123.123.12.123:8000')
+    # r1 = Proxy.random()
+    # Proxy.delete(value='123.123.12.123:8000')

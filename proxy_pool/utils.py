@@ -7,6 +7,9 @@ from lxml import etree
 import requests
 import random
 
+# 关闭所谓不安全链接的提醒
+requests.packages.urllib3.disable_warnings()
+
 def get_random_headers():
     return {'User-Agent': random.choice(settings.USER_AGENTS)}
 

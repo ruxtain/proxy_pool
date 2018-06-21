@@ -1,17 +1,17 @@
 # get proxy from free websites
 
-import requests
-import re
-import time
+from proxy_pool import settings
+from proxy_pool import utils
+from proxy_pool import db
+
+from urllib.parse import urlparse
+from datetime import datetime
 import multiprocessing
+import requests
+import random
+import time
 import sys
-
-sys.path.append('../proxy_pool')
-
-try:
-    from proxy_pool import utils
-except ModuleNotFoundError:
-    import utils
+import re
 
 proxy_pattern = re.compile(r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*?(\d{2,5})')
 no_tag_pattern = re.compile(r'<.*?>')
@@ -19,14 +19,11 @@ no_whitespace_pattern = re.compile(r'\s+')
 
 class ProxyGetter:
     '''
-    base_url: omitted
+    base_url: the basic url of the proxy website
     pages: a list of page index
     processor: do something with the html before applying regex
     clease: a default processor that cleans tags and whitespaces
     '''
-    
-    PAUSE = 1
-
     @staticmethod
     def _cleanse(html):
         html = no_tag_pattern.sub('', html)
@@ -35,7 +32,7 @@ class ProxyGetter:
     def __init__(self, base_url, pages, processor=None, cleanse=False):
         self.base_url = base_url
         self.pages = pages
-        self.proxies = self.get()
+        # self.proxies = self.get()
         self.cleanse = cleanse
         self.processor = processor
     def get(self):
@@ -47,15 +44,78 @@ class ProxyGetter:
             if self.processor:
                 html = self.processor(html)
             for proxy in proxy_pattern.findall(html):
-                time.sleep(self.PAUSE)
                 yield '{}:{}'.format(*proxy)
 
-proxy_getters = [
-    ProxyGetter('http://www.xicidaili.com/nn/{}', range(1,30), cleanse=True),
-    ProxyGetter('http://www.66ip.cn/{}.html', ['index.html'] + list(range(1,30))),
-    ProxyGetter('http://www.ip3366.net/free/?page={}', range(1,7), cleanse=True),
-    ProxyGetter('https://www.kuaidaili.com/free/inha/{}/',range(1,10),cleanse=True),
-    ProxyGetter('http://www.data5u.com/free/{}/index.shtml',['gngn', 'gnpt', 'gwgn', 'gwpt'],cleanse=True),
-    ProxyGetter('http://www.89ip.cn/index_{}.html',range(1, 100),cleanse=True),
-]
+
+def pro_coderbusy(html):
+    '''
+    An example of `processor`
+    '''
+    return re.sub(r' \d{2}\.\d{2} ', ' ', html)
+
+
+def pool_run():
+    '''
+    You can easily extend the free proxy website list with just one line,
+    if the ProxyGetter._cleanse method is not enough to parse the page,
+    you can use the `processor` parameter to write your own `_cleanse`.
+    '''
+    proxy_getters = [
+        ProxyGetter('http://www.xicidaili.com/nn/{}', range(1,30), cleanse=True),
+        ProxyGetter('http://www.66ip.cn/{}.html', ['index.html'] + list(range(1,30))),
+        ProxyGetter('http://www.ip3366.net/free/?page={}', range(1,7), cleanse=True),
+        ProxyGetter('https://www.kuaidaili.com/free/inha/{}/',range(1,10),cleanse=True),
+        ProxyGetter('http://www.data5u.com/free/{}/index.shtml',['gngn', 'gnpt', 'gwgn', 'gwpt'],cleanse=True),
+        ProxyGetter('http://www.89ip.cn/index_{}.html',range(1, 100),cleanse=True),
+        ProxyGetter('http://ip.jiangxianli.com/?page={}',range(1,4), cleanse=True),
+        ProxyGetter('http://www.mimiip.com/gngao/{}',range(1,100), cleanse=True),
+        ProxyGetter('https://proxy.coderbusy.com/classical/https-ready.aspx?page={}',range(1,100), processor=pro_coderbusy, cleanse=True),
+    ]
+    random.shuffle(proxy_getters) # avoid hit the same website repeatively
+    while True:
+        for proxy_getter in proxy_getters:
+            parsed_url = urlparse(proxy_getter.base_url)
+            url = '{}://{}'.format(parsed_url.scheme, parsed_url.netloc)
+            print('Grabbing proxies from: {}'.format(url))
+            for proxy in proxy_getter.get():
+                if db.Proxy._count() < settings.POOL_SIZE: 
+                    p = db.Proxy(value=proxy, count=0, update=datetime.now())
+                    result = p.save()
+                    if result:
+                        p.status('add')
+                    else:
+                        p.status('get')
+                else:
+                    time.sleep(10)
+
+
+#############
+#  Testing  #
+#############
+
+def test_processor(html):
+    return re.sub(r' \d{2}\.\d{2} ', ' ', html)
+
+def main():
+    import time
+    base_url = 'https://proxy.coderbusy.com/classical/https-ready.aspx?page={}'
+    for proxy in ProxyGetter(base_url,range(1,100), processor=test_processor, cleanse=True).get():
+        print(proxy)
+        time.sleep(0.3)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
