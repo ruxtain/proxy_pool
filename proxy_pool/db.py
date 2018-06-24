@@ -80,16 +80,9 @@ class DatetimeField(Field):
     def validate(self, value):
         return isinstance(value, datetime)
 
-'''
-UserWarning: MongoClient opened before fork. Create MongoClient only after forking. See PyMongo's documentation for details: http://api.mongodb.org/python/current/faq.html#is-pymongo-fork-safe
-  "MongoClient opened before fork. Create MongoClient only "
-'''
-
 class ModelBase(type):
     '''
         metaclass for models
-        hardcode database connection for now
-        will use settings in the future
     '''
     def __new__(cls, name, bases, attrs):
         __primary_key__ = None
@@ -107,8 +100,12 @@ class ModelBase(type):
 
 
 class Model(metaclass=ModelBase):
-    
-
+    '''
+    To avoid the following warning,
+    UserWarning: MongoClient opened before fork. Create MongoClient only after forking. See PyMongo's documentation for details: http://api.mongodb.org/python/current/faq.html#is-pymongo-fork-safe
+    "MongoClient opened before fork. Create MongoClient only "
+    A database connection must be created with each Model instance, namely, "after fork".
+    '''
     def __init__(self, **kwargs): 
         for attr, value in kwargs.items(): # 新建的 Proxy 对象的参数字典
             if attr != '_id': # mappings 中不含 _id 
