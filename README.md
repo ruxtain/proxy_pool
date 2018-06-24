@@ -3,7 +3,7 @@ proxy_pool
 
 > Only tested under python3.6 (macOS)
 
-Inspired by the project: [!(proxy_pool)[https://github.com/jhao104/proxy_pool]], I want to make a proxy pool with less code and simpler logic.
+Inspired by the project: [proxy_pool](https://github.com/jhao104/proxy_pool), I want to make a proxy pool with less code and simpler logic.
 
 # How it works
 
@@ -22,6 +22,12 @@ You can get a random proxy with http API, the default port is 5001:
 ```
 import requests
 requests.get('http://localhost:5001')
+```
+
+or remove an invalid proxy like this:
+```
+import requests
+requests.get('http://localhost:5001/delete/?value=123.123.123.123:9000')
 ```
 
 # settings
