@@ -30,7 +30,7 @@ import requests
 requests.get('http://localhost:5001/delete/?value=123.123.123.123:9000')
 ```
 
-# settings
+# Settings
 
 You can see a django style settings.py here. 
 The `POOL_SIZE` is the max number of proxies you put in the pool.

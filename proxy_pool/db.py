@@ -8,6 +8,7 @@ as there's no need to reinvent the wheel.
 http://docs.mongoengine.org/tutorial.html
 '''
 
+import random
 import pymongo
 from datetime import datetime
 from proxy_pool import settings
@@ -117,7 +118,11 @@ class Model(metaclass=ModelBase):
 
     @classproperty
     def __collection__(cls): # fork 之后创建 client，以免报警告
-        client = pymongo.MongoClient(settings.DB_HOST, settings.DB_PORT, connect=False)
+        '''
+        connect (optional): if True (the default), immediately begin connecting to 
+        MongoDB in the background. Otherwise connect on the first operation.
+        '''
+        client = pymongo.MongoClient(settings.DB_HOST, settings.DB_PORT, connect=True)
         model_name = cls.__name__
         return client[model_name.lower()][model_name.capitalize()]
 
@@ -147,9 +152,10 @@ class Model(metaclass=ModelBase):
         '''
         返回任意一项
         '''
-        cursor = cls.__collection__.aggregate([{ '$sample': { 'size': 1 } }])
-        sample = list(cursor)[0]
-        return cls.get(_id=sample['_id'])
+        count = cls.__collection__.count()
+        rand = random.choice(range(1, count+1))
+        _id = cls.__collection__.find().limit(-1).skip(rand).next()['_id']
+        return cls.get(_id=_id)
 
     @classmethod
     def filter(cls, **kwargs):
@@ -201,7 +207,7 @@ class Model(metaclass=ModelBase):
                 )   
                 return False         
             else:
-                self.__collection__.insert_one(__dict__.self)
+                self.__collection__.insert_one(self.__dict__)
                 return True
         elif hasattr(self, '__primary_key__'):
             if self.__collection__.find_one({self.__primary_key__: self.__getattribute__(self.__primary_key__)}):
