@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 from datetime import datetime
 import multiprocessing
 import requests
+import pymongo
 import random
 import time
 import sys
@@ -78,9 +79,12 @@ def pool_run():
             url = '{}://{}'.format(parsed_url.scheme, parsed_url.netloc)
             print('Grabbing proxies from: {}'.format(url))
             for proxy in proxy_getter.get():
-                if db.Proxy._count() < settings.POOL_SIZE: 
-                    p = db.Proxy(value=proxy, count=0, update=datetime.now())
-                    result = p.save()
+                if db.Proxy.total() < settings.POOL_SIZE: 
+                    p = db.Proxy(value=proxy)
+                    try:
+                        result = p.save()
+                    except pymongo.errors.DuplicateKeyError:
+                        pass
                     if result:
                         p.status('add')
                     else:

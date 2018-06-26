@@ -1,5 +1,9 @@
 '''
-Check if a proxy is valid.
+策略：
+遍历测试代理的有效性，如果失败则 count 加 1
+遍历的顺序根据代理的上次更新时间（update_time)，从最古老的开始
+当 count 超过某个临界值（DEL_SIGNAL）时删除代理 （临界值暂定为 5）
+
 '''
 
 from proxy_pool import utils
@@ -10,6 +14,8 @@ from datetime import datetime
 import multiprocessing
 import requests
 import time
+
+DEL_SIGNAL = 3 # 临界值（超过这个值才会删除）
 
 def verify_proxy(proxy):
     proxies = {"http": "http://{proxy}".format(proxy=proxy.value)}
@@ -22,34 +28,47 @@ def verify_proxy(proxy):
         return False
 
 def exam(proxy):
+    '''
+    check if a proxy is valid
+    delete if it's invalid
+    '''
     proxy.status('check')
-    retry = 2
-    while proxy.count <= retry:
-        if verify_proxy(proxy):
-            proxy.count = 0
-            proxy.update = datetime.now()
-            proxy.status('update')
-            proxy.save()
-            break
+    if proxy.count < DEL_SIGNAL:
+        if verify_proxy(proxy):  # success
+            proxy.count = 0 
+            proxy.status('success')
         else:
             proxy.count += 1
-    if proxy.count > retry:
+            proxy.status('fail')
+        proxy.update_time = datetime.now() 
+        proxy.save()
+    else:
         proxy.status('delete')
         proxy.delete()
 
 def exam_run():
     '''
-    No need to check the proxy too frequently if POOL_SIZE is small.
+    检查的频率主要由 POOL_SIZE 大小和良品率决定。
     '''
-    p_num = settings.POOL_SIZE//100 + 6 # a relation based on experience
+    p_num0 = settings.POOL_SIZE//100  # a relation based on experience
+    
     while True:
-        if db.Proxy._count() > 0:
+        rate = db.Proxy.quality_rate()
+        if rate < 0.1:
+            p_num = p_num0 + 15
+        elif rate < 0.5:
+            p_num = p_num0 + 10
+        else:
+            p_num = p_num0 + 6
+
+        print('Using {} processes:'.format(p_num))
+
+        if db.Proxy.total() > 0:
             pool = multiprocessing.Pool(processes=p_num)
-            pool.map(exam, db.Proxy.filter())
+            pool.map(exam, db.Proxy.objects.order_by('update_time')) # 从最老的开始
             pool.close()
         else:
             time.sleep(10)
-
 
 
 
