@@ -3,10 +3,41 @@
 使用 mongoengine 替代自制的 orm
 '''
 
+import os
 import random
 from datetime import datetime
-# from proxy_pool import settings
+from proxy_pool import settings
+import logging
+import proxy_pool
 from mongoengine import *
+
+path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+logfile = os.path.join(path, 'proxy_pool.log')
+logging.basicConfig(
+    filename=logfile, 
+    filemode='a', 
+    level=logging.DEBUG,
+    datefmt='[%Y-%m-%d %H:%M:%S]',
+    format='%(asctime)s %(message)s',
+)
+# 因为 proxy 的状态需要打印到日志，所以把日志配置到这里，以及把 print_log 定义到这里
+# 之所以用 a 模式是因为多进程写日志用 w 只能允许某一个进程写入，
+# 用 a 的话，每次允许程序前清空日志，可以达到类似 w 的效果。
+
+def init_log():
+    with open(logfile, 'w', encoding='utf-8') as f:
+        pass
+
+def print_log(content, level='debug'):
+    print(content)
+    if level == 'debug':
+        logging.debug(content)
+    elif level == 'info':
+        logging.info(content)
+    elif level == 'warning':
+        logging.warning(content)
+    elif level == 'critical':
+        logging.critical(content)
 
 class Proxy(Document):
     value = StringField(required=True, unique=True)
@@ -45,18 +76,23 @@ class Proxy(Document):
         return good / (bad + 1)
 
     def status(self, *info):
-        print('{:<24} count: {:<5}update: {:<12}total: {}   -->   {}'.format(
+        content = '{:<24} count: {:<5}update: {:<12}total: {}   -->   {}'.format(
             self.value,
             self.count,
             self.update_time.strftime("%H:%M:%S"),
             self.total(),
             ' '.join([str(i) for i in info])
-        ))     
+        )
+        print(content)
+        logging.debug(content)
 
-connect(Proxy.__name__) # 用类名作为 db 名
+connect(
+    Proxy.__name__,
+    host = settings.DB_HOST,
+    port = settings.DB_PORT
+) # 用类名作为 db 名
 
 if __name__ == '__main__':
-
     p = Proxy.random()
     print(p)
 

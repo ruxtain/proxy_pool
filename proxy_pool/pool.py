@@ -7,8 +7,8 @@ from proxy_pool import db
 from urllib.parse import urlparse
 from datetime import datetime
 import multiprocessing
+import mongoengine
 import requests
-import pymongo
 import random
 import time
 import sys
@@ -77,13 +77,13 @@ def pool_run():
         for proxy_getter in proxy_getters:
             parsed_url = urlparse(proxy_getter.base_url)
             url = '{}://{}'.format(parsed_url.scheme, parsed_url.netloc)
-            print('Grabbing proxies from: {}'.format(url))
+            db.print_log('Grabbing proxies from: {}'.format(url))
             for proxy in proxy_getter.get():
                 if db.Proxy.total() < settings.POOL_SIZE: 
                     p = db.Proxy(value=proxy)
                     try:
                         result = p.save()
-                    except pymongo.errors.DuplicateKeyError:
+                    except mongoengine.errors.NotUniqueError:
                         pass
                     if result:
                         p.status('add')
@@ -104,7 +104,6 @@ def main():
     import time
     base_url = 'https://proxy.coderbusy.com/classical/https-ready.aspx?page={}'
     for proxy in ProxyGetter(base_url,range(1,100), processor=test_processor, cleanse=True).get():
-        print(proxy)
         time.sleep(0.3)
 
 

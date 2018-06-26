@@ -61,7 +61,7 @@ def exam_run():
         else:
             p_num = p_num0 + 6
 
-        print('Using {} processes:'.format(p_num))
+        db.print_log('Using {} processes:'.format(p_num))
 
         if db.Proxy.total() > 0:
             pool = multiprocessing.Pool(processes=p_num)
