@@ -1,6 +1,8 @@
 proxy_pool
 ======
 
+> branch `dev` testing
+
 > Only tested under python3.6 (macOS)
 
 Inspired by the project: [proxy_pool](https://github.com/jhao104/proxy_pool), I want to make a proxy pool with less code and simpler logic.
