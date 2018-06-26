@@ -23,7 +23,7 @@ def delete():
 
 @app.route('/all/')
 def get_all():
-    proxies = db.Proxy.filter()
+    proxies = db.Proxy.objects.all()
     n = 0
     out = ''
     for proxy in proxies:

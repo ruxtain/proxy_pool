@@ -40,6 +40,7 @@ def print_log(content, level='debug'):
         logging.critical(content)
 
 class Proxy(Document):
+
     value = StringField(required=True, unique=True)
     count = IntField(default=0) 
     update_time = DateTimeField(default=datetime.now())
@@ -53,16 +54,22 @@ class Proxy(Document):
         return collection.count()
 
     @classmethod
-    def random(cls):
-        collection = cls._get_collection()
-        # count = collection.count()
-        # rand = random.choice(range(1, count+1))
-        # _id = collection.find().limit(-1).skip(rand).next()['_id']
-        # a = dict(collection.find().limit(-1).skip(rand).next())
-        # return cls.objects.get(value=value)
-        # _id = list(collection.aggregate([{ '$sample': { 'size': 1 } }]))[0]['_id'] # 未经大量测试的随机
-        _id = list(collection.aggregate([{ '$sample': { 'size': 1 } }]))[0]['_id']
-        return cls.objects.get(id=_id) # mongoengine 中 _id 被写作 id
+    def valid(cls):
+        '''
+        return the number of valid proxies
+        I define them by count == 0
+        '''
+        return cls.objects.filter(count__lt=2).count()
+
+    # @classmethod
+    # def random2(cls):
+    #     collection = cls._get_collection()
+    #     _id = list(collection.aggregate([{ '$sample': { 'size': 1 } }]))[0]['_id']
+    #     return cls.objects.get(id=_id) # mongoengine 中 _id 被写作 id
+
+    @classmethod
+    def random(cls): # 只取 count < 2 的高质量代理
+        return random.choice(cls.objects.filter(count__lt=2))
 
     @classmethod
     def quality_rate(cls):
@@ -76,21 +83,25 @@ class Proxy(Document):
         return good / (bad + 1)
 
     def status(self, *info):
-        content = '{:<24} count: {:<5}update: {:<12}total: {}   -->   {}'.format(
+        content = '{:<24} count: {:<5}update: {:<12}total: {:<6}valid: {}   -->   {}'.format(
             self.value,
             self.count,
             self.update_time.strftime("%H:%M:%S"),
             self.total(),
+            self.valid(),
             ' '.join([str(i) for i in info])
         )
         print(content)
         logging.debug(content)
 
+# MAC 下报警告：UserWarning: MongoClient opened before fork. Create MongoClient only after forking. See PyMongo's documentation for details: http://api.mongodb.org/python/current/faq.html#is-pymongo-fork-safe
+# "MongoClient opened before fork. Create MongoClient only "
+# WIN 下没有任何问题，暂时不深究。
 connect(
     Proxy.__name__,
     host = settings.DB_HOST,
     port = settings.DB_PORT
-) # 用类名作为 db 名
+) 
 
 if __name__ == '__main__':
     p = Proxy.random()
