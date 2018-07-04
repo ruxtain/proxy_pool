@@ -42,3 +42,7 @@ To add more proxy website, you can use just one line like this (proxy_pool/pool.
 ```
 ProxyGetter('http://www.xicidaili.com/nn/{}', range(1,30), cleanse=True)
 ```
+
+# Todo
+
+It requires tons of resource. Might have to switch it to multi-threading.
