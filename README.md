@@ -12,7 +12,7 @@ Check if these proxies are valid periodically with multiprocessing.
 
 # Try it out
 
-There isn't much to do before hand, simple run:
+There isn't much to do before hand, simply run:
 ```
 pip install -r requriements.txt
 python main.py
