@@ -7,12 +7,14 @@ from proxy_pool.db import print_log, init_log
 from multiprocessing import Process
 from datetime import datetime
 
+import pymongo
+
 def basic_info():
     print_log('PROXY POOL begins.')
     print_log('More info can be found here: https://github.com/ruxtain/proxy_pool')
     print_log('POOL SIZE: {}'.format(POOL_SIZE))
     print_log('API: http://127.0.0.1:{}'.format(API_PORT))
-    print_log('connecting to: mongodb://{}:{}\n'.format(DB_HOST, DB_PORT))
+    print_log('connected to: mongodb://{}:{}\n'.format(DB_HOST, DB_PORT))
 
     print_log('Always use `CTRL+C` to quit ...(Don\'t use `CTRL+Z`)\n')
 
@@ -31,10 +33,15 @@ def main():
         p.join()
 
 if __name__ == '__main__':
-    init_log()
-    main()
 
-
-
+    try:
+        print('Checking mongodb connection...')
+        client = pymongo.MongoClient(host=DB_HOST, port=DB_PORT)
+        client.test.test.insert({'date': datetime.now()})
+        init_log()  # 新建空的日志，如果不存在的话
+        main()        
+    except pymongo.errors.ServerSelectionTimeoutError:
+        print("ERORR: You haven't started the mongodb. Please run `mongod`.")
+        exit(1)        
 
 

@@ -4,6 +4,9 @@
 遍历的顺序根据代理的上次更新时间（update_time)，从最古老的开始
 当 count 超过某个临界值（DEL_SIGNAL）时删除代理 （临界值暂定为 5）
 
+测试链接 http://httpbin.org/ip （西雅图） 可能需要换成国内网站，
+以提高测试的速度。timeout 就可以设置短一点。
+
 '''
 
 from proxy_pool import utils
@@ -15,13 +18,12 @@ import multiprocessing
 import requests
 import time
 
-DEL_SIGNAL = 3 # 临界值（超过这个值才会删除）
-
 def verify_proxy(proxy):
     proxies = {"http": "http://{proxy}".format(proxy=proxy.value)}
     headers = utils.get_random_headers()
     try:
-        response = requests.get('http://httpbin.org/ip', headers=headers, proxies=proxies, timeout=8, verify=False)
+        # response = requests.get('http://httpbin.org/ip', headers=headers, proxies=proxies, timeout=8, verify=False)
+        response = requests.get('https://www.dbmeinv.com/dbgroup/topics.htm', headers=headers, proxies=proxies, timeout=8, verify=False)
         if response.status_code == 200:
             return True
     except:
@@ -33,7 +35,7 @@ def exam(proxy):
     delete if it's invalid
     '''
     proxy.status('check')
-    if proxy.count < DEL_SIGNAL:
+    if proxy.count < settings.DEL_SIGNAL:
         if verify_proxy(proxy):  # success
             proxy.count = 0 
             proxy.status('success')
