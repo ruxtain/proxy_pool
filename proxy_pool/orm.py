@@ -1,11 +1,7 @@
 '''
 A mini ORM for mongodb.
-You can extend it if you want.
-
-I might switch to mongoengine in the future 
-as there's no need to reinvent the wheel.
-
-http://docs.mongoengine.org/tutorial.html
+It's obsoleted already. 
+But I keep it here for future reference.
 '''
 
 import random

@@ -9,7 +9,8 @@ from datetime import datetime
 from proxy_pool import settings
 import logging
 import proxy_pool
-from mongoengine import *
+from mongoengine import Document, StringField, IntField, DateTimeField
+from mongoengine import connect
 
 path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 logfile = os.path.join(path, 'proxy_pool.log')
@@ -25,10 +26,12 @@ logging.basicConfig(
 # 用 a 的话，每次允许程序前清空日志，可以达到类似 w 的效果。
 
 def init_log():
+    """ clear previous log before running """
     with open(logfile, 'w', encoding='utf-8') as f:
         pass
 
 def print_log(content, level='debug'):
+    """ output log to both console and proxy_pool.log file """
     print(content)
     if level == 'debug':
         logging.debug(content)
@@ -61,12 +64,6 @@ class Proxy(Document):
         '''
         return cls.objects.filter(count__lt=2).count()
 
-    # @classmethod
-    # def random2(cls):
-    #     collection = cls._get_collection()
-    #     _id = list(collection.aggregate([{ '$sample': { 'size': 1 } }]))[0]['_id']
-    #     return cls.objects.get(id=_id) # mongoengine 中 _id 被写作 id
-
     @classmethod
     def random(cls): # 只取 count < 2 的高质量代理
         return random.choice(cls.objects.filter(count__lt=2))
@@ -91,9 +88,9 @@ class Proxy(Document):
             self.valid(),
             ' '.join([str(i) for i in info])
         )
-        print(content)
-        logging.debug(content)
-
+        print_log(content)
+        
+        
 # MAC 下报警告：UserWarning: MongoClient opened before fork. Create MongoClient only after forking. See PyMongo's documentation for details: http://api.mongodb.org/python/current/faq.html#is-pymongo-fork-safe
 # "MongoClient opened before fork. Create MongoClient only "
 # WIN 下没有任何问题，暂时不深究。

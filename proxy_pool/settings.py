@@ -12,7 +12,8 @@ DB_PORT = 27017
 # number of proxy in pool (pool.py)
 POOL_SIZE = 200
 
-DEL_SIGNAL = 3 # 临界值（超过这个值才会删除）
+# when the proxy fails 3 times, it'll be removed
+DEL_SIGNAL = 3 
 
 # random user agent
 USER_AGENTS = [
