@@ -22,8 +22,7 @@ def verify_proxy(proxy):
     proxies = {"http": "http://{proxy}".format(proxy=proxy.value)}
     headers = utils.get_random_headers()
     try:
-        # response = requests.get('http://httpbin.org/ip', headers=headers, proxies=proxies, timeout=8, verify=False)
-        response = requests.get('https://www.dbmeinv.com/dbgroup/topics.htm', headers=headers, proxies=proxies, timeout=8, verify=False)
+        response = requests.get('http://httpbin.org/get', headers=headers, proxies=proxies, timeout=8, verify=False)
         if response.status_code == 200:
             return True
     except:
