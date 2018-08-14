@@ -16,10 +16,12 @@ def index():
 @app.route('/delete/', methods=['GET'])
 def delete():
     proxy = request.args.get('value') # from flask import request
-    if db.Proxy.delete(value=proxy): # django style
-        return 'success'
-    else:
-        return 'proxy not found'
+    try:
+        proxy = db.Proxy.objects.get(value=proxy) # django style
+        proxy.delete()
+        return 'deleted successfully'
+    except db.DoesNotExist:
+        return "It's already gone!"
 
 @app.route('/all/')
 def get_all():

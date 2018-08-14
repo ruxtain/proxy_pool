@@ -10,8 +10,9 @@ from proxy_pool import settings
 import logging
 import proxy_pool
 from mongoengine import Document, StringField, IntField, DateTimeField
-from mongoengine import connect
+from mongoengine import connect, errors
 
+DoesNotExist = errors.DoesNotExist
 path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 logfile = os.path.join(path, 'proxy_pool.log')
 logging.basicConfig(
@@ -80,9 +81,8 @@ class Proxy(Document):
         return good / (bad + 1)
 
     def status(self, *info):
-        content = '{:<24} count: {:<5}update: {:<12}total: {:<6}valid: {}   -->   {}'.format(
+        content = '{:<24} update: {:<12}total: {:<6}valid: {}   -->   {}'.format(
             self.value,
-            self.count,
             self.update_time.strftime("%H:%M:%S"),
             self.total(),
             self.valid(),
