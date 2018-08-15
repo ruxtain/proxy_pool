@@ -2,9 +2,9 @@ from proxy_pool.api import api_run
 from proxy_pool.exam import exam_run
 from proxy_pool.pool import pool_run
 from proxy_pool.settings import POOL_SIZE, API_PORT, DB_HOST, DB_PORT
-from proxy_pool.db import print_log, init_log
+from proxy_pool.utils import print_log, init_log
 
-from multiprocessing import Process
+import threading
 from datetime import datetime
 
 import pymongo
@@ -20,17 +20,14 @@ def basic_info():
 
 def main():
     basic_info()
-    p_list = [
-        (True, Process(target=pool_run)),
-        (False, Process(target=exam_run)),
-        (True, Process(target=api_run)),
-    ]
 
-    for daemon, p in p_list:
-        p.daemon = daemon
-        p.start()
-    for daemon, p in p_list:
-        p.join()
+    pool = threading.Thread(target=pool_run)
+    exam = threading.Thread(target=exam_run)
+    api = threading.Thread(target=api_run)
+
+    pool.start()
+    exam.start()
+    api.start()
 
 if __name__ == '__main__':
 
@@ -38,6 +35,7 @@ if __name__ == '__main__':
         print('Checking mongodb connection...')
         client = pymongo.MongoClient(host=DB_HOST, port=DB_PORT)
         client.test.test.insert({'date': datetime.now()})
+        client.close()
         init_log()  # 新建空的日志，如果不存在的话
         main()        
     except pymongo.errors.ServerSelectionTimeoutError:

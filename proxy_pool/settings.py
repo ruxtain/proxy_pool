@@ -8,6 +8,12 @@ API_PORT = 5001
 # mongodb config (db.py)
 DB_HOST = 'localhost'
 DB_PORT = 27017
+DB_NAME = 'Proxy'
+DB_COLLECTION = 'proxy'
+
+# exam
+QUEUE_SIZE = 10
+EXAM_SIZE = 30
 
 # number of proxy in pool (pool.py)
 POOL_SIZE = 300

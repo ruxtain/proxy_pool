@@ -2,7 +2,7 @@
 
 from proxy_pool import settings
 from proxy_pool import utils
-from proxy_pool import db
+from proxy_pool.db import Proxy, print_log
 
 from urllib.parse import urlparse
 from datetime import datetime
@@ -20,12 +20,12 @@ no_whitespace_pattern = re.compile(r'\s+')
 
 class ProxyGetter:
     """base_url: the basic url of the proxy website
-    pages: a list of page index
+    pages: a list of page index, default to 1 page
     processor: do something with the html before applying regex
     clease: a default processor that cleans tags and whitespaces
     """
 
-    def __init__(self, base_url, pages, processor=None, cleanse=False):
+    def __init__(self, base_url, pages=range(1,2), processor=None, cleanse=False):
         self.base_url = base_url
         self.pages = pages
         self.cleanse = cleanse
@@ -63,8 +63,13 @@ def pool_run():
     """
 
     proxy_getters = [
-        ProxyGetter('http://www.xicidaili.com/nn/{}', range(1,30), cleanse=True),
-        ProxyGetter('http://www.66ip.cn/{}.html', ['index.html'] + list(range(1,30))),
+        ProxyGetter('https://seotoolstation.com/free-proxy-list', cleanse=True),
+        ProxyGetter('http://www.goubanjia.com/', cleanse=True),
+        ProxyGetter('http://www.xicidaili.com/nn/{}', range(1,3000), cleanse=True),
+        ProxyGetter('http://www.xicidaili.com/nt/{}', range(1,690), cleanse=True),
+        ProxyGetter('http://www.xicidaili.com/wn/{}', range(1,1400), cleanse=True),
+        ProxyGetter('http://www.xicidaili.com/wt/{}', range(1,1800), cleanse=True),
+        ProxyGetter('http://www.66ip.cn/{}.html', ['index.html'] + list(range(1,1339))),
         ProxyGetter('http://www.ip3366.net/free/?page={}', range(1,7), cleanse=True),
         ProxyGetter('https://www.kuaidaili.com/free/inha/{}/',range(1,10),cleanse=True),
         ProxyGetter('http://www.data5u.com/free/{}/index.shtml',['gngn', 'gnpt', 'gwgn', 'gwpt'],cleanse=True),
@@ -80,32 +85,16 @@ def pool_run():
         for proxy_getter in proxy_getters:
             parsed_url = urlparse(proxy_getter.base_url)
             url = '{}://{}'.format(parsed_url.scheme, parsed_url.netloc)
-            db.print_log('Grabbing proxies from: {}'.format(url))
+            print_log('Grabbing proxies from: {}'.format(url))
             for proxy in proxy_getter.get():
-                if db.Proxy.total() < settings.POOL_SIZE: 
-                    p = db.Proxy(value=proxy)
+                if Proxy.total() < settings.POOL_SIZE: 
+                    p = Proxy(value=proxy, count=1)
                     try:
-                        result = p.save()
-                    except mongoengine.errors.NotUniqueError:
-                        continue
-                    if result:
-                        p.status('add')
-                    else:
+                        Proxy.get({'value': p.value})
                         p.status('get')
-                else:
-                    time.sleep(10)
+                    except LookupError:
+                        p.save()
+                        p.status('add')
+                    
 
-
-#############
-#  Testing  #
-#############
-
-def test_processor(html):
-    return re.sub(r' \d{2}\.\d{2} ', ' ', html)
-
-def main():
-    import time
-    base_url = 'https://proxy.coderbusy.com/classical/https-ready.aspx?page={}'
-    for proxy in ProxyGetter(base_url,range(1,100), processor=test_processor, cleanse=True).get():
-        time.sleep(0.3)
 
