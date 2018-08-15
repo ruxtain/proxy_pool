@@ -1,16 +1,18 @@
-'''
-重构模型的 count 计数更新规则
-使用 mongoengine 替代自制的 orm
-'''
+"""
+    A new version of Mongo ORM (based on mongoengine)
+"""
 
-import os
-import random
-from datetime import datetime
-from proxy_pool import settings
-import logging
-import proxy_pool
 from mongoengine import Document, StringField, IntField, DateTimeField
 from mongoengine import connect, errors
+
+from proxy_pool import settings
+import proxy_pool
+
+from datetime import datetime
+import logging
+import random
+import os
+
 
 DoesNotExist = errors.DoesNotExist
 path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -81,7 +83,7 @@ class Proxy(Document):
         return good / (bad + 1)
 
     def status(self, *info):
-        content = '{:<24} update: {:<12}total: {:<6}valid: {}   -->   {}'.format(
+        content = '{:<24} update: {:<12}total: {:<6}valid: {}   ->   {}'.format(
             self.value,
             self.update_time.strftime("%H:%M:%S"),
             self.total(),
@@ -97,7 +99,8 @@ class Proxy(Document):
 connect(
     Proxy.__name__,
     host = settings.DB_HOST,
-    port = settings.DB_PORT
+    port = settings.DB_PORT,
+    connect = False,
 ) 
 
 if __name__ == '__main__':

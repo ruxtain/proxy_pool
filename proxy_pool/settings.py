@@ -10,7 +10,7 @@ DB_HOST = 'localhost'
 DB_PORT = 27017
 
 # number of proxy in pool (pool.py)
-POOL_SIZE = 200
+POOL_SIZE = 300
 
 # when the proxy fails 3 times, it'll be removed
 DEL_SIGNAL = 3 

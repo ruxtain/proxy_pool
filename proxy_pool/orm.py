@@ -1,6 +1,6 @@
 '''
 A mini ORM for mongodb.
-It's obsoleted already. 
+It's `OBSOLETED` already. 
 But I keep it here for future reference.
 '''
 
