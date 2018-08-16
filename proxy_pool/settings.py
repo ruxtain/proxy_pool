@@ -15,14 +15,17 @@ DB_COLLECTION = 'proxy'
 # exam.py
 EXAM_QUEUE_SIZE = 10
 EXAM_WORKERS = 30
+# EXAM_WEBSITE = 'http://httpbin.org/ip'
+# EXAM_WEBSITE = 'https://www.baidu.com/'
+EXAM_WEBSITE = 'http://www.ip138.com/ips138.asp'
 
 # pool.py
 POOL_SIZE = 300
 POOL_WORKERS = 3
 
 
-# when the proxy fails 3 times, it'll be removed
-DEL_SIGNAL = 3 
+# when the proxy fails DEL_SIGNAL times, it'll be removed
+DEL_SIGNAL = 2
 
 # random user agent
 USER_AGENTS = [

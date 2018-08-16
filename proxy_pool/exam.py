@@ -5,6 +5,7 @@
 from proxy_pool import db
 from proxy_pool import settings
 from proxy_pool.db import Proxy
+from proxy_pool.utils import print_log
 
 from datetime import datetime
 from queue import Queue
@@ -55,11 +56,24 @@ class SlaveThread(threading.Thread):
     def check(self, proxy):
         try:
             proxies = {'http': proxy.value}
-            response = requests.get('http://httpbin.org/get', proxies=proxies, timeout=8)
+            response = requests.get(
+                    settings.EXAM_WEBSITE,
+                    proxies=proxies,
+                    timeout=8,
+                    allow_redirects=False
+                )
             if response.status_code == 200:
                 return True
-        except:
-            pass
+            elif response.status_code == 502:
+                return False
+        except Exception as e:
+            e = str(e)
+            if 'Connection refused' in e:
+                print_log('Connection refused {}'.format(proxy.value))
+            elif 'connect timeout=' in e or 'Read timed out.' in e:
+                print_log('Connection timeout {}'.format(proxy.value))
+            else:
+                print_log(e)
         return False
 
 def exam_run():

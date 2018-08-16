@@ -40,18 +40,17 @@ def utils_request(url):
     headers = {'User-Agent': random.choice(settings.USER_AGENTS)}
     try:
         proxy = Proxy.random(max_count=0)
+        print_log('Using {} to fetch {}...'.format(proxy.value, url))
         proxies = {'http': proxy.value}
     except IndexError:
         proxies = {}
 
-    print_log('Using {} to fetch {}...'.format(proxy.value, url))
-    
     try:
         response = requests.get(url, headers=headers, proxies=proxies, timeout=10)
         if response.status_code == 200:
             return response.text
         else:
-            print_log('Failed to fetch from:', url)
+            pass
 
     except requests.exceptions.ProxyError:
         pass
@@ -77,7 +76,7 @@ def init_queue(proxy_websites):
 def proxy_website_crawler(queue):
     while True:
 
-        if Proxy.valid() < settings.POOL_SIZE: 
+        if len(list(Proxy.filter({'count': 0}))) < settings.POOL_SIZE: 
 
             url = queue.get()
 
@@ -107,8 +106,6 @@ def proxy_website_crawler(queue):
             time.sleep(5)
 
         
-
-
 def pool_run():
     proxy_websites = [
         ProxyWebsite('https://seotoolstation.com/free-proxy-list'), # easy

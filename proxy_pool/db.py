@@ -36,6 +36,11 @@ class Proxy:
         self.__str__()
 
     @classmethod
+    def get_collection(cls):
+        """ return mongo query instead of Proxy objects """
+        return cls.collection
+
+    @classmethod
     def get(cls, criteria):
         """ Only return one proxy """
         proxy_dict = cls.collection.find_one(criteria)
@@ -106,7 +111,7 @@ class Proxy:
         return good / (bad + good)
 
     def status(self, *info):
-        content = '{:<22} update: {:<12}total: {:<6}valid: {}   -> {}'.format(
+        content = '{:<22} update: {:<10}total: {:<6}valid: {}   -> {}'.format(
             self.value,
             self.update_time.strftime("%H:%M:%S"),
             self.total(),

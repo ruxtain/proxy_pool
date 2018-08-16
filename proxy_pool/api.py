@@ -49,6 +49,20 @@ def get_all():
     }
     return jsonify(response)
 
+@app.route('/status/')
+def status():
+    total = Proxy.total()
+    count_0 = Proxy.get_collection().find({'count': 0}).count()
+    count_1 = Proxy.get_collection().find({'count': 1}).count()
+    count_2 = Proxy.get_collection().find({'count': 2}).count()
+    response = {
+        'total': total,
+        'count_0': count_0,
+        'count_1': count_1,
+        'count_2': count_2,
+    }
+    return jsonify(response)
+
 
 def api_run():
     app.run(host=settings.API_HOST, port=settings.API_PORT)
