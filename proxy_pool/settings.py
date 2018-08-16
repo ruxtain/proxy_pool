@@ -2,21 +2,24 @@
 global settings go here
 '''
 
-# flask port (api.py)
+# api.py
+API_HOST = 'localhost'
 API_PORT = 5001
 
-# mongodb config (db.py)
+# db.py
 DB_HOST = 'localhost'
 DB_PORT = 27017
-DB_NAME = 'Proxy'
+DB_NAME = 'proxy'
 DB_COLLECTION = 'proxy'
 
-# exam
-QUEUE_SIZE = 10
-EXAM_SIZE = 30
+# exam.py
+EXAM_QUEUE_SIZE = 10
+EXAM_WORKERS = 30
 
-# number of proxy in pool (pool.py)
+# pool.py
 POOL_SIZE = 300
+POOL_WORKERS = 3
+
 
 # when the proxy fails 3 times, it'll be removed
 DEL_SIGNAL = 3 

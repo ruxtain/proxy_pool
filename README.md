@@ -33,16 +33,15 @@ requests.get('http://localhost:5001/delete/?value=123.123.123.123:9000')
 # Settings
 
 You can see a django style settings.py here. 
-The `POOL_SIZE` is the max number of proxies you put in the pool.
+The `POOL_SIZE` is the max number of valid proxies.
 You can configure it according to your needs.
 
 # Extension
 
 To add more proxy website, you can use just one line like this (proxy_pool/pool.py):
 ```
-ProxyGetter('http://www.xicidaili.com/nn/{}', range(1,30), cleanse=True)
+# range(1, 30) indicates 1 to 29 pages, of course
+ProxyGetter('http://www.xicidaili.com/nn/{}', range(1,30))
 ```
 
-# Todo
 
-It requires tons of resource. Might have to switch it to multi-threading.

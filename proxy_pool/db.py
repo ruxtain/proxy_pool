@@ -17,13 +17,13 @@ import os
 
 
 # todo: metaclass
-client = MongoClient(host=settings.DB_HOST, port=settings.DB_PORT, maxPoolSize=200) # global
+client = MongoClient(host=settings.DB_HOST, port=settings.DB_PORT, maxPoolSize=500) # global
 
 class Proxy:
 
     collection = client[settings.DB_NAME][settings.DB_COLLECTION]
 
-    def __init__(self, value, count=0, update_time=datetime.now(), _id=None):
+    def __init__(self, value, count=1, update_time=datetime.now(), _id=None):
         self._id = _id
         self.value = value
         self.count = count
@@ -31,6 +31,9 @@ class Proxy:
 
     def __str__(self):
         return "<{}, count={}>".format(self.value, self.count)
+
+    def __repr__(self):
+        self.__str__()
 
     @classmethod
     def get(cls, criteria):
@@ -46,7 +49,7 @@ class Proxy:
         """ Get a list of proxies 
         WARNING: It might not be used to check if a certain value exists
         """
-        for proxy_dict in cls.collection.find(criteria):
+        for proxy_dict in cls.collection.find(criteria).sort('count'):
             yield cls(**proxy_dict)
 
     def save(self):
@@ -78,9 +81,9 @@ class Proxy:
     @classmethod
     def valid(cls):
         """return the number of valid proxies
-        I define them by count < 2
+        I define them by count <= 1
         """
-        return cls.collection.find({"count": {"$lte": 2}}).count()
+        return cls.collection.find({"count": {"$lte": 1}}).count()
 
     @classmethod
     def random(cls, max_count=2):
@@ -103,7 +106,7 @@ class Proxy:
         return good / (bad + good)
 
     def status(self, *info):
-        content = '{:<24} time: {:<12}total: {:<6}valid: {}   ->   {}'.format(
+        content = '{:<22} update: {:<12}total: {:<6}valid: {}   -> {}'.format(
             self.value,
             self.update_time.strftime("%H:%M:%S"),
             self.total(),
@@ -111,19 +114,6 @@ class Proxy:
             ' '.join([str(i) for i in info])
         )
         print_log(content)
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
