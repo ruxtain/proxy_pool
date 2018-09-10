@@ -1,6 +1,5 @@
-"""
-    Check the functionality of a proxy
-"""
+#! /Users/michael/anaconda3/bin/python
+# @Date:   2018-09-09 20:53:22
 
 from proxy_pool import db
 from proxy_pool import settings
@@ -8,87 +7,47 @@ from proxy_pool.db import Proxy
 from proxy_pool.utils import print_log
 
 from datetime import datetime
-from queue import Queue
-import threading
-import requests
-import time
+import asyncio
+import aiohttp
+import concurrent
 
-class MasterThread(threading.Thread):
-    """ Get proxy from mongodb to exam """
 
-    def __init__(self, queue):
-        self.queue = queue
-        super().__init__()
-
-    def run(self):
-        """ sort by count (descending) then by update_time (ascending)
-        so it removes bad ones more efficiently
-        """
-        while True:
-            for proxy in Proxy.aggregate([{ "$sort" : { "count": -1, "update_time": 1 } }]):
-                self.queue.put(proxy)
-
-class SlaveThread(threading.Thread):
-    """ Check if the proxy works """
-
-    def __init__(self, queue):
-        self.queue = queue
-        super().__init__()
-
-    def run(self):
-        while True:
-            proxy = self.queue.get()
-            proxy.status('check')
-            if proxy.count < settings.DEL_SIGNAL:
-                if self.check(proxy):  # success
-                    proxy.count = 0 
-                    proxy.status('success')
-                else:
-                    proxy.count += 1
-                    proxy.status('fail')
-                proxy.update_time = datetime.now() 
-                proxy.save()
-            else:
-                proxy.status('delete')
-                proxy.delete()                
-            self.queue.task_done()
-
-    def check(self, proxy):
-        try:
-            proxies = {'http': proxy.value}
-            response = requests.get(
-                    settings.EXAM_WEBSITE,
-                    proxies=proxies,
-                    timeout=8,
-                    allow_redirects=False
-                )
-            if response.status_code == 200:
-                return True
-            elif response.status_code == 502:
-                return False
-        except Exception as e:
-            e = str(e)
-            if 'Connection refused' in e:
-                print_log('Connection refused {}'.format(proxy.value))
-            elif 'connect timeout=' in e or 'Read timed out.' in e:
-                print_log('Connection timeout {}'.format(proxy.value))
-            else:
-                print_log(e)
+async def check(proxy):
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(settings.EXAM_WEBSITE, proxy="http://{}".format(proxy.value), timeout=10) as response:
+                html = await response.text()
+                if response.status == 200: # 拿 status 不需要 await
+                    return True
+    except concurrent.futures._base.TimeoutError:
+        return False
+    except aiohttp.client_exceptions.ClientProxyConnectionError:
         return False
 
+
+async def task(proxy, sem):    
+    async with sem:
+        if 0 < proxy.count < settings.DEL_SIGNAL:
+            flag = await check(proxy)
+            if flag:  # success
+                proxy.count = 0 
+                proxy.status('success')
+            else:
+                proxy.count += 1
+                proxy.status('fail')
+            proxy.update_time = datetime.now() 
+            proxy.save()
+        else:
+            proxy.status('delete')
+            proxy.delete()   
+
+
 def exam_run():
-    """SlaveThread must start first or the Master's queue.put will block
-    """
-    queue = Queue(settings.EXAM_QUEUE_SIZE)
-    master = MasterThread(queue)
-    master.start()
-
-    for i in range(settings.EXAM_WORKERS):
-        slave = SlaveThread(queue)
-        slave.daemon = True
-        slave.start()
-
-
+    while True:
+        sem = asyncio.Semaphore(settings.EXAM_CORO)
+        tasks = [task(proxy, sem) for proxy in Proxy.aggregate([{"$sort" :{"count": -1, "update_time": 1}}])]
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(asyncio.wait(tasks))
 
 
 

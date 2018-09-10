@@ -16,10 +16,11 @@ import logging
 import os
 
 
+# client = MongoClient(host=settings.DB_HOST, port=settings.DB_PORT, maxPoolSize=500) # global
+
 class Proxy:
 
-    # connect = False 避免 fork 前连接
-    client = MongoClient(host=settings.DB_HOST, port=settings.DB_PORT, connect=False)
+    client = MongoClient(host=settings.DB_HOST, port=settings.DB_PORT)
     collection = client[settings.DB_NAME][settings.DB_COLLECTION]
 
     def __init__(self, value, count=1, update_time=datetime.now(), _id=None):

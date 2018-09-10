@@ -7,25 +7,32 @@ API_HOST = 'localhost'
 API_PORT = 5001
 
 # db.py
+# DB_HOST = 'localhost'
+# DB_PORT = 6379
+# DB_NAME = 0
+
 DB_HOST = 'localhost'
 DB_PORT = 27017
 DB_NAME = 'proxy'
 DB_COLLECTION = 'proxy'
 
 # exam.py
-EXAM_QUEUE_SIZE = 10
-EXAM_WORKERS = 30
+# 检测有效性的协程数
+EXAM_CORO = 200
 # EXAM_WEBSITE = 'http://httpbin.org/ip'
-# EXAM_WEBSITE = 'https://www.baidu.com/'
-EXAM_WEBSITE = 'http://www.ip138.com/ips138.asp'
+EXAM_WEBSITE = 'https://www.zhihu.com/robots.txt'
+# EXAM_WEBSITE = 'http://www.360doc.com/robots.txt'
+
 
 # pool.py
-POOL_SIZE = 300
+POOL_SIZE = 100
 POOL_WORKERS = 3
+# 有效、带检验代理的总数的上限
+POOL_MAX_SIZE = 10000 
 
 
 # when the proxy fails DEL_SIGNAL times, it'll be removed
-DEL_SIGNAL = 2
+DEL_SIGNAL = 3
 
 # random user agent
 USER_AGENTS = [

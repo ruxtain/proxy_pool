@@ -1,5 +1,6 @@
-proxy_pool
-======
+# proxy_pool
+[![Open Source Love](https://badges.frapsoft.com/os/v2/open-source.svg?v=103)](https://github.com/ellerbrock/open-source-badges/) [![MIT Licence](https://badges.frapsoft.com/os/mit/mit.png?v=103)](https://opensource.org/licenses/mit-license.php)
+
 
 > Only tested under python3.6 (macOS)
 
@@ -14,14 +15,13 @@ Check if these proxies are valid periodically with multiprocessing.
 
 There isn't much to do before hand, simply run:
 ```
-pip install -r requriements.txt
 python main.py
 ```
 
 You can get a random proxy with http API, the default port is 5001:
 ```
 import requests
-requests.get('http://localhost:5001')
+requests.get('http://localhost:5001/get')
 ```
 
 or remove an invalid proxy like this:
@@ -34,7 +34,6 @@ requests.get('http://localhost:5001/delete/?value=123.123.123.123:9000')
 
 You can see a django style settings.py here. 
 The `POOL_SIZE` is the max number of valid proxies.
-You can configure it according to your needs.
 
 # Extension
 

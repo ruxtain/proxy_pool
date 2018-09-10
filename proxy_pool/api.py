@@ -10,26 +10,32 @@ log.setLevel(logging.ERROR)
 
 app = Flask(__name__)
 
+help_text = {
+    "/": "display help information",
+    "/get": "get a valid proxy",
+    "/delete": "delete a give proxy like this: /delete?value=123.123.123.123:8888",
+    "/all": "display all proxies",
+    "/status": "basic information of the proxy pool"
+}
+
 @app.route('/')
 def index():
-    proxy = Proxy.random()
-    response = {
-        'value': proxy.value,
-        'count': proxy.count
-    }
-    return jsonify(response)
+    return jsonify(help_text)
 
-@app.route('/best/')
-def best():
+@app.route('/get/')
+def get():
     """The new proxy's count is default to 1, so if the count is 0, 
     it means it has been successful for at least once.
     """
-    proxy = Proxy.random(max_count=0)
-    response = {
-        'value': proxy.value,
-        'count': proxy.count
-    }
-    return jsonify(response)
+    try:
+        proxy = Proxy.random(max_count=0)
+        response = {
+            'value': proxy.value,
+            'count': proxy.count
+        }
+        return jsonify(response)
+    except IndexError:
+        return jsonify({"count": "", "value": ""})
 
 @app.route('/delete/', methods=['GET'])
 def delete():
